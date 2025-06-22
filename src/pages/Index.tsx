@@ -1,21 +1,23 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Share2, Send, Copy } from "lucide-react";
+import { MessageSquare, Share2, Send, Copy, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserSession } from "@/hooks/useUserSession";
 import MessageSlideshow from "@/components/MessageSlideshow";
 import UserDashboard from "@/components/UserDashboard";
 import MessageForm from "@/components/MessageForm";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import EngagementTips from "@/components/EngagementTips";
 
 const Index = () => {
   const [currentView, setCurrentView] = useState<'home' | 'dashboard' | 'message'>('home');
   const [username, setUsername] = useState('');
   const [targetUser, setTargetUser] = useState('');
-  const { user, loading, createUser } = useUserSession();
+  const { user, loading, createUser, signInWithGoogle } = useUserSession();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -130,7 +132,7 @@ const Index = () => {
             <MessageSlideshow />
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-12">
             
             <Card className="bg-white/95 backdrop-blur border-0 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105">
               <CardContent className="p-8">
@@ -149,6 +151,11 @@ const Index = () => {
                     <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
                       <p className="text-green-800 font-medium">
                         Welcome back, {user.username}!
+                        {user.isAnonymous && (
+                          <Badge variant="secondary" className="ml-2 bg-yellow-100 text-yellow-800">
+                            Anonymous
+                          </Badge>
+                        )}
                       </p>
                       <div className="flex items-center justify-center gap-2 mt-2">
                         <p className="text-green-600 text-sm">
@@ -164,6 +171,23 @@ const Index = () => {
                         </Button>
                       </div>
                     </div>
+                    
+                    {user.isAnonymous && (
+                      <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="text-blue-800 text-sm mb-2">
+                          💡 Secure your account with Google to keep your messages forever!
+                        </p>
+                        <Button 
+                          onClick={signInWithGoogle}
+                          size="sm"
+                          className="w-full bg-blue-600 hover:bg-blue-700"
+                        >
+                          <LogIn className="w-4 h-4 mr-2" />
+                          Upgrade with Google
+                        </Button>
+                      </div>
+                    )}
+                    
                     <div className="grid grid-cols-2 gap-3">
                       <Button 
                         onClick={() => setCurrentView('dashboard')}
@@ -196,6 +220,24 @@ const Index = () => {
                       className="w-full bg-purple-600 hover:bg-purple-700 text-lg py-3"
                     >
                       Create My Inbox
+                    </Button>
+                    
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-gray-300" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-white px-2 text-gray-500">Or</span>
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      onClick={signInWithGoogle}
+                      variant="outline"
+                      className="w-full border-2 border-gray-200 hover:bg-gray-50"
+                    >
+                      <LogIn className="w-4 h-4 mr-2" />
+                      Sign in with Google
                     </Button>
                   </div>
                 )}
@@ -247,6 +289,12 @@ const Index = () => {
             </Card>
           </div>
 
+          {/* Engagement Tips */}
+          <div className="max-w-4xl mx-auto mb-12">
+            <EngagementTips />
+          </div>
+
+          {/* Features Grid */}
           <div className="mt-16 text-center">
             <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
               <div className="text-white">

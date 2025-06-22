@@ -5,8 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Send, ArrowDown } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useMessages } from "@/hooks/useMessages";
 import { Filter } from 'bad-words';
 
 interface MessageFormProps {
@@ -31,7 +30,7 @@ const MessageForm = ({ targetUser, onBack }: MessageFormProps) => {
   const [message, setMessage] = useState('');
   const [selectedPrompt, setSelectedPrompt] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
+  const { sendMessage } = useMessages();
 
   const handlePromptSelect = (promptText: string) => {
     if (selectedPrompt === promptText) {
@@ -43,90 +42,29 @@ const MessageForm = ({ targetUser, onBack }: MessageFormProps) => {
     }
   };
 
-  const sendMessage = async () => {
+  const handleSendMessage = async () => {
     if (!message.trim()) {
-      toast({
-        title: "Message cannot be empty",
-        description: "Please write a message before sending",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (message.length > 500) {
-      toast({
-        title: "Message too long",
-        description: "Please keep your message under 500 characters",
-        variant: "destructive",
-      });
       return;
     }
 
     if (filter.isProfane(message)) {
-      toast({
-        title: "Message blocked",
-        description: "Your message contains inappropriate content",
-        variant: "destructive",
-      });
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // First, find the target user
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('username', targetUser.toLowerCase())
-        .single();
-
-      if (userError || !userData) {
-        toast({
-          title: "User not found",
-          description: "This username doesn't exist yet",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Send the message
-      const { error: messageError } = await supabase
-        .from('messages')
-        .insert({
-          user_id: userData.id,
-          message_text: message.trim()
-        });
-
-      if (messageError) throw messageError;
-
-      // Show notification if supported
-      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-        new Notification(`New anonymous message for ${targetUser}`, {
-          body: message.slice(0, 50) + (message.length > 50 ? '...' : ''),
-          icon: '/lovable-uploads/icon-192x192.png',
-        });
-      }
-
-      toast({
-        title: "Message sent! 🎉",
-        description: `Your anonymous message has been delivered to ${targetUser}`,
-      });
-
-      setMessage('');
-      setSelectedPrompt(null);
+      const success = await sendMessage(targetUser, message);
       
-      setTimeout(() => {
-        onBack();
-      }, 2000);
-
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: "Failed to send message",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
+      if (success) {
+        setMessage('');
+        setSelectedPrompt(null);
+        
+        // Show success and redirect after 2 seconds
+        setTimeout(() => {
+          onBack();
+        }, 2000);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -206,8 +144,14 @@ const MessageForm = ({ targetUser, onBack }: MessageFormProps) => {
                   
                   <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
                     <span>Keep it respectful and anonymous</span>
-                    <span>{message.length}/500</span>
+                    <span className={message.length > 450 ? 'text-red-500' : ''}>{message.length}/500</span>
                   </div>
+
+                  {filter.isProfane(message) && (
+                    <p className="text-red-500 text-sm mt-1">
+                      ⚠️ Your message contains inappropriate content
+                    </p>
+                  )}
                 </div>
                 
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -221,8 +165,8 @@ const MessageForm = ({ targetUser, onBack }: MessageFormProps) => {
                 </div>
                 
                 <Button
-                  onClick={sendMessage}
-                  disabled={isSubmitting || !message.trim()}
+                  onClick={handleSendMessage}
+                  disabled={isSubmitting || !message.trim() || filter.isProfane(message)}
                   className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-lg py-3 font-semibold"
                 >
                   {isSubmitting ? (
@@ -234,7 +178,7 @@ const MessageForm = ({ targetUser, onBack }: MessageFormProps) => {
                     <>
                       <Send className="w-5 h-5 mr-2" />
                       Send Anonymous Message
-                    </>
+                    <//>
                   )}
                 </Button>
               </CardContent>
