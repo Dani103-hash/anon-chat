@@ -25,12 +25,6 @@ export const useUserSession = () => {
       const localUsername = localStorage.getItem('anonChatUser');
       
       if (localUuid) {
-        // Set the user UUID for RLS policies
-        await supabase.rpc('set_config', {
-          parameter: 'app.current_user_uuid',
-          value: localUuid
-        });
-
         const { data, error } = await supabase
           .from('users')
           .select('*')
@@ -55,12 +49,6 @@ export const useUserSession = () => {
     try {
       const userUuid = existingUuid || crypto.randomUUID();
       
-      // Set the user UUID for RLS policies
-      await supabase.rpc('set_config', {
-        parameter: 'app.current_user_uuid',
-        value: userUuid
-      });
-
       const { data, error } = await supabase
         .from('users')
         .insert({
