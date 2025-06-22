@@ -106,7 +106,8 @@ const UserDashboard = ({ username, onBack }: UserDashboardProps) => {
   };
 
   const requestNotificationPermission = async () => {
-    if ('Notification' in window) {
+    // Check if Notification API is available
+    if (typeof window !== 'undefined' && 'Notification' in window) {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         toast({
@@ -114,10 +115,21 @@ const UserDashboard = ({ username, onBack }: UserDashboardProps) => {
           description: "You'll be notified when you receive new messages",
         });
       }
+    } else {
+      toast({
+        title: "Notifications not supported",
+        description: "Your browser doesn't support notifications",
+        variant: "destructive",
+      });
     }
   };
 
   const unansweredCount = messages.filter(msg => !msg.isAnswered).length;
+
+  // Check if notifications are supported and get permission status
+  const notificationPermission = typeof window !== 'undefined' && 'Notification' in window 
+    ? Notification.permission 
+    : 'unsupported';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500">
@@ -150,7 +162,7 @@ const UserDashboard = ({ username, onBack }: UserDashboardProps) => {
                 Share Link
               </Button>
               
-              {Notification.permission !== 'granted' && (
+              {notificationPermission !== 'granted' && notificationPermission !== 'unsupported' && (
                 <Button 
                   onClick={requestNotificationPermission}
                   className="bg-white/20 hover:bg-white/30 text-white border border-white/30"

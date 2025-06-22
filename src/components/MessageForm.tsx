@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -91,8 +92,8 @@ const MessageForm = ({ targetUser, onBack }: MessageFormProps) => {
       // Save to localStorage
       localStorage.setItem(`anonChat_messages_${targetUser}`, JSON.stringify(messages));
 
-      // Show notification if permission granted
-      if (Notification.permission === 'granted') {
+      // Show notification if permission granted and API is available
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
         new Notification(`New anonymous message for ${targetUser}`, {
           body: message.slice(0, 50) + (message.length > 50 ? '...' : ''),
           icon: '/lovable-uploads/icon-192x192.png',
