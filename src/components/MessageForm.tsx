@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Send, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { Filter } from 'bad-words';
 
 interface MessageFormProps {
@@ -13,7 +14,6 @@ interface MessageFormProps {
   onBack: () => void;
 }
 
-// Initialize profanity filter
 const filter = new Filter();
 
 const quickPrompts = [
@@ -74,25 +74,33 @@ const MessageForm = ({ targetUser, onBack }: MessageFormProps) => {
     setIsSubmitting(true);
 
     try {
-      // Create message object
-      const newMessage = {
-        id: Date.now().toString(),
-        text: message.trim(),
-        timestamp: Date.now(),
-        isAnswered: false,
-      };
+      // First, find the target user
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('username', targetUser.toLowerCase())
+        .single();
 
-      // Get existing messages for target user
-      const existingMessages = localStorage.getItem(`anonChat_messages_${targetUser}`);
-      const messages = existingMessages ? JSON.parse(existingMessages) : [];
-      
-      // Add new message
-      messages.push(newMessage);
-      
-      // Save to localStorage
-      localStorage.setItem(`anonChat_messages_${targetUser}`, JSON.stringify(messages));
+      if (userError || !userData) {
+        toast({
+          title: "User not found",
+          description: "This username doesn't exist yet",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      // Show notification if permission granted and API is available
+      // Send the message
+      const { error: messageError } = await supabase
+        .from('messages')
+        .insert({
+          user_id: userData.id,
+          message_text: message.trim()
+        });
+
+      if (messageError) throw messageError;
+
+      // Show notification if supported
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
         new Notification(`New anonymous message for ${targetUser}`, {
           body: message.slice(0, 50) + (message.length > 50 ? '...' : ''),
@@ -105,16 +113,15 @@ const MessageForm = ({ targetUser, onBack }: MessageFormProps) => {
         description: `Your anonymous message has been delivered to ${targetUser}`,
       });
 
-      // Reset form
       setMessage('');
       setSelectedPrompt(null);
       
-      // Go back after short delay
       setTimeout(() => {
         onBack();
       }, 2000);
 
     } catch (error) {
+      console.error('Error sending message:', error);
       toast({
         title: "Failed to send message",
         description: "Something went wrong. Please try again.",
@@ -130,7 +137,6 @@ const MessageForm = ({ targetUser, onBack }: MessageFormProps) => {
       <div className="min-h-screen bg-black/10 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-8">
           
-          {/* Header */}
           <div className="text-center mb-8">
             <Button 
               onClick={onBack}
@@ -152,7 +158,6 @@ const MessageForm = ({ targetUser, onBack }: MessageFormProps) => {
             </Badge>
           </div>
 
-          {/* Quick Prompts */}
           <div className="max-w-4xl mx-auto mb-8">
             <h2 className="text-xl font-bold text-white text-center mb-6 drop-shadow">
               Choose a prompt or write your own message
@@ -177,7 +182,6 @@ const MessageForm = ({ targetUser, onBack }: MessageFormProps) => {
             </div>
           </div>
 
-          {/* Message Form */}
           <div className="max-w-2xl mx-auto">
             <Card className="bg-white/95 backdrop-blur border-0 shadow-2xl">
               <CardHeader>
@@ -206,7 +210,6 @@ const MessageForm = ({ targetUser, onBack }: MessageFormProps) => {
                   </div>
                 </div>
                 
-                {/* Safety Notice */}
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <ArrowDown className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
@@ -238,7 +241,6 @@ const MessageForm = ({ targetUser, onBack }: MessageFormProps) => {
             </Card>
           </div>
 
-          {/* Footer */}
           <div className="text-center mt-8">
             <p className="text-white/80 text-sm">
               Your message will be delivered instantly and anonymously

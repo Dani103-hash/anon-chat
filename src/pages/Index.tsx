@@ -1,58 +1,30 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Share2, Bell, Send } from "lucide-react";
+import { MessageSquare, Share2, Send, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useUserSession } from "@/hooks/useUserSession";
 import MessageSlideshow from "@/components/MessageSlideshow";
 import UserDashboard from "@/components/UserDashboard";
 import MessageForm from "@/components/MessageForm";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 const Index = () => {
   const [currentView, setCurrentView] = useState<'home' | 'dashboard' | 'message'>('home');
   const [username, setUsername] = useState('');
   const [targetUser, setTargetUser] = useState('');
-  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const { user, loading, createUser } = useUserSession();
   const { toast } = useToast();
 
-  // Check if user has existing session
   useEffect(() => {
-    const savedUser = localStorage.getItem('anonChatUser');
-    if (savedUser) {
-      setCurrentUser(savedUser);
+    if (user && currentView === 'home') {
+      setCurrentView('dashboard');
     }
-  }, []);
+  }, [user, currentView]);
 
-  // PWA Install prompt
-  useEffect(() => {
-    let deferredPrompt: any;
-    
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      
-      // Show install button after 3 seconds
-      setTimeout(() => {
-        if (deferredPrompt) {
-          toast({
-            title: "Install AnonChat",
-            description: "Add to your home screen for the best experience!",
-            duration: 5000,
-          });
-        }
-      }, 3000);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, [toast]);
-
-  const createUser = () => {
+  const handleCreateUser = async () => {
     if (!username.trim()) {
       toast({
         title: "Username required",
@@ -62,7 +34,6 @@ const Index = () => {
       return;
     }
     
-    // Simple username validation
     if (username.length < 3 || !/^[a-zA-Z0-9_]+$/.test(username)) {
       toast({
         title: "Invalid username",
@@ -72,26 +43,27 @@ const Index = () => {
       return;
     }
 
-    localStorage.setItem('anonChatUser', username);
-    setCurrentUser(username);
-    setCurrentView('dashboard');
-    
-    toast({
-      title: "Welcome to AnonChat!",
-      description: `Your link: anonchat.app/${username}`,
-    });
+    const newUser = await createUser(username);
+    if (newUser) {
+      setCurrentView('dashboard');
+      toast({
+        title: "Welcome to AnonChat!",
+        description: `Your link: ${window.location.origin}/${username}`,
+      });
+    }
   };
 
   const shareProfile = () => {
-    if (currentUser) {
+    if (user) {
+      const shareUrl = `${window.location.origin}/${user.username}`;
       if (navigator.share) {
         navigator.share({
           title: `Send me anonymous messages!`,
           text: `Ask me anything anonymously on AnonChat`,
-          url: `${window.location.origin}/${currentUser}`,
+          url: shareUrl,
         });
       } else {
-        navigator.clipboard.writeText(`${window.location.origin}/${currentUser}`);
+        navigator.clipboard.writeText(shareUrl);
         toast({
           title: "Link copied!",
           description: "Share this link to receive anonymous messages",
@@ -100,8 +72,27 @@ const Index = () => {
     }
   };
 
-  if (currentView === 'dashboard' && currentUser) {
-    return <UserDashboard username={currentUser} onBack={() => setCurrentView('home')} />;
+  const copyToClipboard = () => {
+    if (user) {
+      const shareUrl = `${window.location.origin}/${user.username}`;
+      navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Link copied!",
+        description: "Your profile link has been copied to clipboard",
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-white/30 border-t-white rounded-full"></div>
+      </div>
+    );
+  }
+
+  if (currentView === 'dashboard' && user) {
+    return <UserDashboard user={user} onBack={() => setCurrentView('home')} />;
   }
 
   if (currentView === 'message' && targetUser) {
@@ -130,21 +121,17 @@ const Index = () => {
               Send and receive anonymous messages
             </p>
             
-            {/* Age Gate Badge */}
             <Badge variant="secondary" className="bg-white/20 text-white border-white/30 mb-6">
               13+ only • Anonymous messaging platform
             </Badge>
           </div>
 
-          {/* Sample Messages Slideshow */}
           <div className="mb-12">
             <MessageSlideshow />
           </div>
 
-          {/* Main Action Cards */}
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             
-            {/* Create Profile Card */}
             <Card className="bg-white/95 backdrop-blur border-0 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105">
               <CardContent className="p-8">
                 <div className="text-center mb-6">
@@ -157,15 +144,25 @@ const Index = () => {
                   </p>
                 </div>
                 
-                {currentUser ? (
+                {user ? (
                   <div className="space-y-4">
                     <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
                       <p className="text-green-800 font-medium">
-                        Welcome back, {currentUser}!
+                        Welcome back, {user.username}!
                       </p>
-                      <p className="text-green-600 text-sm">
-                        anonchat.app/{currentUser}
-                      </p>
+                      <div className="flex items-center justify-center gap-2 mt-2">
+                        <p className="text-green-600 text-sm">
+                          anonchat.app/{user.username}
+                        </p>
+                        <Button
+                          onClick={copyToClipboard}
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <Button 
@@ -192,10 +189,10 @@ const Index = () => {
                       value={username}
                       onChange={(e) => setUsername(e.target.value.toLowerCase())}
                       className="text-center text-lg border-2 border-purple-200 focus:border-purple-500"
-                      onKeyPress={(e) => e.key === 'Enter' && createUser()}
+                      onKeyPress={(e) => e.key === 'Enter' && handleCreateUser()}
                     />
                     <Button 
-                      onClick={createUser}
+                      onClick={handleCreateUser}
                       className="w-full bg-purple-600 hover:bg-purple-700 text-lg py-3"
                     >
                       Create My Inbox
@@ -205,7 +202,6 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            {/* Send Message Card */}
             <Card className="bg-white/95 backdrop-blur border-0 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105">
               <CardContent className="p-8">
                 <div className="text-center mb-6">
@@ -251,7 +247,6 @@ const Index = () => {
             </Card>
           </div>
 
-          {/* Features List */}
           <div className="mt-16 text-center">
             <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
               <div className="text-white">
@@ -260,9 +255,9 @@ const Index = () => {
                 <p className="text-sm opacity-80">No registration needed to send messages</p>
               </div>
               <div className="text-white">
-                <Bell className="w-8 h-8 mx-auto mb-3 opacity-90" />
-                <h3 className="font-semibold mb-2">Instant Notifications</h3>
-                <p className="text-sm opacity-80">Get notified of new messages instantly</p>
+                <Send className="w-8 h-8 mx-auto mb-3 opacity-90" />
+                <h3 className="font-semibold mb-2">Instant Delivery</h3>
+                <p className="text-sm opacity-80">Messages are delivered instantly</p>
               </div>
               <div className="text-white">
                 <Share2 className="w-8 h-8 mx-auto mb-3 opacity-90" />
@@ -273,6 +268,8 @@ const Index = () => {
           </div>
         </div>
       </div>
+      
+      <PWAInstallPrompt />
     </div>
   );
 };

@@ -9,6 +9,8 @@
   "theme_color": "#8b5cf6",
   "orientation": "portrait-primary",
   "categories": ["social", "communication"],
+  "lang": "en",
+  "scope": "/",
   "icons": [
     {
       "src": "/lovable-uploads/icon-192x192.png",
@@ -17,7 +19,7 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/lovable-uploads/icon-512x512.png",
+      "src": "/lovable-uploads/icon-512x512.png", 
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -26,19 +28,33 @@
   "screenshots": [
     {
       "src": "/lovable-uploads/screenshot-mobile.png",
-      "sizes": "390x844",
+      "sizes": "390x844", 
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
       "src": "/lovable-uploads/screenshot-desktop.png",
       "sizes": "1200x800",
-      "type": "image/png",
+      "type": "image/png", 
       "form_factor": "wide"
     }
   ],
   "prefer_related_applications": false,
   "edge_side_panel": {
     "preferred_width": 400
-  }
+  },
+  "shortcuts": [
+    {
+      "name": "Send Message",
+      "short_name": "Send",
+      "description": "Send an anonymous message",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/lovable-uploads/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
 }
