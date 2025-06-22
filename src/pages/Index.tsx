@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Share2, Bell } from "lucide-react";
+import { MessageSquare, Share2, Bell, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import MessageSlideshow from "@/components/MessageSlideshow";
 import UserDashboard from "@/components/UserDashboard";

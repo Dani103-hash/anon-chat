@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Send, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import Filter from 'bad-words';
+import { Filter } from 'bad-words';
 
 interface MessageFormProps {
   targetUser: string;
