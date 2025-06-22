@@ -178,7 +178,7 @@ const MessageForm = ({ targetUser, onBack }: MessageFormProps) => {
                     <>
                       <Send className="w-5 h-5 mr-2" />
                       Send Anonymous Message
-                    <//>
+                    </>
                   )}
                 </Button>
               </CardContent>
