@@ -35,10 +35,8 @@ export const useUserSession = () => {
         console.log('Auth state changed:', event, session?.user?.id);
         
         if (event === 'SIGNED_IN' && session?.user) {
-          // User signed in with Google - try to link existing anonymous account
           await handleSecureSignIn(session);
         } else if (event === 'SIGNED_OUT') {
-          // User signed out - revert to anonymous if they had one
           await handleSignOut();
         }
         
@@ -51,14 +49,11 @@ export const useUserSession = () => {
 
   const initializeAuth = async () => {
     try {
-      // Check for existing Supabase session first
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
-        // User has secure session - load their linked account
         await loadSecureUser(session);
       } else {
-        // Check for anonymous session
         await loadAnonymousSession();
       }
     } catch (error) {
@@ -107,7 +102,6 @@ export const useUserSession = () => {
             loading: false
           });
         } else {
-          // Anonymous user data not found, clear localStorage
           localStorage.removeItem('anonChatUserUuid');
           localStorage.removeItem('anonChatUser');
           setAuthState(prev => ({ ...prev, loading: false }));
@@ -123,6 +117,15 @@ export const useUserSession = () => {
 
   const createAnonymousUser = async (username: string) => {
     try {
+      if (!username.trim() || username.length < 3 || !/^[a-zA-Z0-9_]+$/.test(username)) {
+        toast({
+          title: "Invalid username",
+          description: "Username must be 3+ characters, letters, numbers, and underscores only",
+          variant: "destructive",
+        });
+        return null;
+      }
+
       const userUuid = crypto.randomUUID();
       
       const { data, error } = await supabase
@@ -146,7 +149,6 @@ export const useUserSession = () => {
         throw error;
       }
 
-      // Store anonymous session
       localStorage.setItem('anonChatUserUuid', userUuid);
       localStorage.setItem('anonChatUser', username);
       
@@ -155,6 +157,11 @@ export const useUserSession = () => {
         user: newUser,
         session: null,
         loading: false
+      });
+      
+      toast({
+        title: "Welcome to AnonChat! 🎉",
+        description: `Your anonymous inbox is ready at /${username}`,
       });
       
       return newUser;
@@ -166,6 +173,88 @@ export const useUserSession = () => {
         variant: "destructive",
       });
       return null;
+    }
+  };
+
+  const signUpWithEmail = async (email: string, password: string, username: string) => {
+    try {
+      if (!username.trim() || username.length < 3 || !/^[a-zA-Z0-9_]+$/.test(username)) {
+        toast({
+          title: "Invalid username",
+          description: "Username must be 3+ characters, letters, numbers, and underscores only",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            username: username.toLowerCase()
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        // Create user record
+        const { error: userError } = await supabase
+          .from('users')
+          .insert({
+            username: username.toLowerCase(),
+            uuid: crypto.randomUUID(),
+            email: email
+          });
+
+        if (userError && userError.code !== '23505') {
+          console.error('Error creating user record:', userError);
+        }
+
+        toast({
+          title: "Account created successfully!",
+          description: "Please check your email to verify your account",
+        });
+        return true;
+      }
+    } catch (error: any) {
+      console.error('Error signing up:', error);
+      toast({
+        title: "Sign up failed",
+        description: error.message || "Could not create account",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const signInWithEmail = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        toast({
+          title: "Welcome back!",
+          description: "You have been signed in successfully",
+        });
+        return true;
+      }
+    } catch (error: any) {
+      console.error('Error signing in:', error);
+      toast({
+        title: "Sign in failed",
+        description: error.message || "Invalid email or password",
+        variant: "destructive",
+      });
+      return false;
     }
   };
 
@@ -194,7 +283,6 @@ export const useUserSession = () => {
       const userEmail = session.user.email;
       if (!userEmail) return;
 
-      // Check if user already has a secure account
       const { data: existingUser } = await supabase
         .from('users')
         .select('*')
@@ -202,15 +290,10 @@ export const useUserSession = () => {
         .single();
 
       if (existingUser) {
-        // User already has secure account
         setAuthState({
           user: { ...existingUser, isAnonymous: false },
           session,
           loading: false
-        });
-        toast({
-          title: "Welcome back!",
-          description: "Signed in successfully",
         });
         return;
       }
@@ -225,7 +308,6 @@ export const useUserSession = () => {
           .single();
 
         if (anonUser) {
-          // Upgrade anonymous account to secure
           const { data: upgradedUser, error } = await supabase
             .from('users')
             .update({ email: userEmail })
@@ -234,7 +316,6 @@ export const useUserSession = () => {
             .single();
 
           if (upgradedUser && !error) {
-            // Clear anonymous session data
             localStorage.removeItem('anonChatUserUuid');
             localStorage.removeItem('anonChatUser');
             
@@ -246,7 +327,7 @@ export const useUserSession = () => {
             
             toast({
               title: "Account upgraded!",
-              description: "Your anonymous account has been secured with Google",
+              description: "Your anonymous account has been secured",
             });
             return;
           }
@@ -254,12 +335,15 @@ export const useUserSession = () => {
       }
 
       // Create new secure user
+      const username = session.user.user_metadata?.username || 
+                     session.user.user_metadata?.preferred_username || 
+                     session.user.email?.split('@')[0] || 
+                     `user_${Date.now()}`;
+
       const { data: newUser, error } = await supabase
         .from('users')
         .insert({
-          username: session.user.user_metadata.preferred_username || 
-                   session.user.email?.split('@')[0] || 
-                   `user_${Date.now()}`,
+          username: username.toLowerCase(),
           uuid: crypto.randomUUID(),
           email: userEmail
         })
@@ -274,8 +358,8 @@ export const useUserSession = () => {
         });
         
         toast({
-          title: "Account created!",
-          description: "Welcome to AnonChat",
+          title: "Welcome to AnonChat!",
+          description: "Your secure account has been created",
         });
       }
     } catch (error) {
@@ -287,7 +371,6 @@ export const useUserSession = () => {
     try {
       await supabase.auth.signOut();
       
-      // Check if user had anonymous session before
       const localUuid = localStorage.getItem('anonChatUserUuid');
       if (localUuid) {
         await loadAnonymousSession();
@@ -298,11 +381,6 @@ export const useUserSession = () => {
           loading: false
         });
       }
-      
-      toast({
-        title: "Signed out",
-        description: "You have been signed out successfully",
-      });
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -324,6 +402,8 @@ export const useUserSession = () => {
     session: authState.session,
     loading: authState.loading,
     createUser: createAnonymousUser,
+    signUpWithEmail,
+    signInWithEmail,
     signInWithGoogle,
     logout,
     refetchUser: initializeAuth

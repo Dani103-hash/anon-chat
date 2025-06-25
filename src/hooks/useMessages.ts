@@ -20,7 +20,6 @@ export const useMessages = (userId?: string) => {
     if (userId) {
       loadMessages();
       
-      // Set up real-time subscription for new messages
       const channel = supabase
         .channel('messages-changes')
         .on(
@@ -33,9 +32,9 @@ export const useMessages = (userId?: string) => {
           },
           (payload) => {
             console.log('New message received:', payload);
-            setMessages(prev => [payload.new as Message, ...prev]);
+            const newMessage = payload.new as Message;
+            setMessages(prev => [newMessage, ...prev]);
             
-            // Show notification if supported
             if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
               new Notification('New anonymous message!', {
                 body: 'You have received a new anonymous message',
@@ -157,7 +156,8 @@ export const useMessages = (userId?: string) => {
 
   const sendMessage = async (targetUsername: string, messageText: string) => {
     try {
-      // Basic validation
+      console.log('Sending message to:', targetUsername, 'Message:', messageText);
+      
       if (!messageText.trim()) {
         throw new Error("Message cannot be empty");
       }
@@ -166,38 +166,48 @@ export const useMessages = (userId?: string) => {
         throw new Error("Message too long (max 500 characters)");
       }
 
-      // Find the target user by username
+      // Find the target user by username (case insensitive)
       const { data: targetUser, error: userError } = await supabase
         .from('users')
-        .select('id')
-        .eq('username', targetUsername.toLowerCase())
+        .select('id, username')
+        .ilike('username', targetUsername.toLowerCase())
         .single();
 
+      console.log('Target user found:', targetUser);
+
       if (userError || !targetUser) {
-        throw new Error("User not found");
+        console.error('User lookup error:', userError);
+        throw new Error(`User "${targetUsername}" not found. Make sure the username is correct.`);
       }
 
       // Send the message
-      const { error } = await supabase
+      const { data: messageData, error } = await supabase
         .from('messages')
         .insert({
           user_id: targetUser.id,
           message_text: messageText.trim()
-        });
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      console.log('Message sent:', messageData);
+
+      if (error) {
+        console.error('Message insert error:', error);
+        throw error;
+      }
 
       toast({
         title: "Message sent! 🎉",
-        description: "Your anonymous message has been delivered",
+        description: `Your anonymous message has been delivered to @${targetUser.username}`,
       });
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error);
       toast({
         title: "Failed to send message",
-        description: error instanceof Error ? error.message : "Something went wrong",
+        description: error.message || "Something went wrong",
         variant: "destructive",
       });
       return false;

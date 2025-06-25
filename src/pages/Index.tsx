@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Share2, Send, Copy, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserSession } from "@/hooks/useUserSession";
+import { Link } from "react-router-dom";
 import MessageSlideshow from "@/components/MessageSlideshow";
 import UserDashboard from "@/components/UserDashboard";
 import MessageForm from "@/components/MessageForm";
@@ -17,7 +18,7 @@ const Index = () => {
   const [currentView, setCurrentView] = useState<'home' | 'dashboard' | 'message'>('home');
   const [username, setUsername] = useState('');
   const [targetUser, setTargetUser] = useState('');
-  const { user, loading, createUser, signInWithGoogle } = useUserSession();
+  const { user, loading, createUser } = useUserSession();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -35,23 +36,10 @@ const Index = () => {
       });
       return;
     }
-    
-    if (username.length < 3 || !/^[a-zA-Z0-9_]+$/.test(username)) {
-      toast({
-        title: "Invalid username",
-        description: "Username must be 3+ characters, letters, numbers, and underscores only",
-        variant: "destructive",
-      });
-      return;
-    }
 
     const newUser = await createUser(username);
     if (newUser) {
       setCurrentView('dashboard');
-      toast({
-        title: "Welcome to AnonChat!",
-        description: `Your link: ${window.location.origin}/${username}`,
-      });
     }
   };
 
@@ -116,6 +104,16 @@ const Index = () => {
           
           {/* Header */}
           <div className="text-center mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <div></div>
+              <Link to="/auth">
+                <Button variant="ghost" className="text-white hover:bg-white/20">
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Sign In
+                </Button>
+              </Link>
+            </div>
+            
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 drop-shadow-lg">
               AnonChat
             </h1>
@@ -175,16 +173,14 @@ const Index = () => {
                     {user.isAnonymous && (
                       <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                         <p className="text-blue-800 text-sm mb-2">
-                          💡 Secure your account with Google to keep your messages forever!
+                          💡 Secure your account with email or Google to keep your messages forever!
                         </p>
-                        <Button 
-                          onClick={signInWithGoogle}
-                          size="sm"
-                          className="w-full bg-blue-600 hover:bg-blue-700"
-                        >
-                          <LogIn className="w-4 h-4 mr-2" />
-                          Upgrade with Google
-                        </Button>
+                        <Link to="/auth">
+                          <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
+                            <LogIn className="w-4 h-4 mr-2" />
+                            Upgrade Account
+                          </Button>
+                        </Link>
                       </div>
                     )}
                     
@@ -231,14 +227,15 @@ const Index = () => {
                       </div>
                     </div>
                     
-                    <Button 
-                      onClick={signInWithGoogle}
-                      variant="outline"
-                      className="w-full border-2 border-gray-200 hover:bg-gray-50"
-                    >
-                      <LogIn className="w-4 h-4 mr-2" />
-                      Sign in with Google
-                    </Button>
+                    <Link to="/auth">
+                      <Button 
+                        variant="outline"
+                        className="w-full border-2 border-gray-200 hover:bg-gray-50"
+                      >
+                        <LogIn className="w-4 h-4 mr-2" />
+                        Sign Up / Sign In
+                      </Button>
+                    </Link>
                   </div>
                 )}
               </CardContent>
