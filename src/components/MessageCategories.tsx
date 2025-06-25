@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Flame, Laugh, Surprise, Brain, MessageCircle } from 'lucide-react';
+import { Heart, Flame, Laugh, Zap, Brain, MessageCircle } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -22,7 +22,7 @@ interface MessageCategoriesProps {
 const categories = [
   { id: 'compliments', name: 'Compliments', icon: Heart, color: 'bg-pink-100 text-pink-800' },
   { id: 'questions', name: 'Questions', icon: MessageCircle, color: 'bg-blue-100 text-blue-800' },
-  { id: 'confessions', name: 'Confessions', icon: Surprise, color: 'bg-purple-100 text-purple-800' },
+  { id: 'confessions', name: 'Confessions', icon: Zap, color: 'bg-purple-100 text-purple-800' },
   { id: 'fun', name: 'Fun', icon: Laugh, color: 'bg-yellow-100 text-yellow-800' },
   { id: 'advice', name: 'Advice', icon: Brain, color: 'bg-green-100 text-green-800' },
 ];

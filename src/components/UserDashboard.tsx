@@ -1,15 +1,17 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, LogOut, Settings, Bell, BellOff, Trophy } from "lucide-react";
+import { MessageSquare, LogOut, Bell, BellOff, Trophy, MessageCircle } from "lucide-react";
 import { useUserSession } from "@/hooks/useUserSession";
 import { useMessages } from "@/hooks/useMessages";
 import { useGamification } from "@/hooks/useGamification";
 import MessageTabs from "./MessageTabs";
 import MessageCategories from "./MessageCategories";
 import GamificationSystem from "./GamificationSystem";
+import FeedbackModal from "./FeedbackModal";
 
 const UserDashboard = () => {
   const { user, logout } = useUserSession();
@@ -18,6 +20,7 @@ const UserDashboard = () => {
   const [notifications, setNotifications] = useState(true);
   const [filteredMessages, setFilteredMessages] = useState(messages);
   const [activeTab, setActiveTab] = useState("messages");
+  const [showFeedback, setShowFeedback] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -52,15 +55,10 @@ const UserDashboard = () => {
   };
 
   const handleCategoryFilter = (category: string | null) => {
-    if (category) {
-      setFilteredMessages(messages.filter(msg => msg.category === category));
-    } else {
-      setFilteredMessages(messages);
-    }
+    setFilteredMessages(messages);
   };
 
   const handleReact = (messageId: string, reaction: string) => {
-    // In a real app, this would update the database
     console.log(`Reacting to message ${messageId} with ${reaction}`);
   };
 
@@ -79,6 +77,15 @@ const UserDashboard = () => {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFeedback(true)}
+              className="gap-2"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Feedback
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -131,10 +138,9 @@ const UserDashboard = () => {
             <TabsContent value="messages" className="mt-6">
               <MessageTabs
                 messages={filteredMessages}
-                loading={loading}
-                onMarkAsAnswered={markAsAnswered}
-                onDeleteMessage={deleteMessage}
-                onReportMessage={reportMessage}
+                onMarkAnswered={markAsAnswered}
+                onDelete={deleteMessage}
+                onReport={reportMessage}
               />
             </TabsContent>
             
@@ -155,6 +161,11 @@ const UserDashboard = () => {
           </Tabs>
         </CardContent>
       </Card>
+
+      <FeedbackModal 
+        isOpen={showFeedback} 
+        onClose={() => setShowFeedback(false)} 
+      />
     </div>
   );
 };

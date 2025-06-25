@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, MessageCircle, Shield, Zap, LogIn } from "lucide-react";
@@ -119,9 +120,7 @@ const Index = () => {
         </div>
       </div>
 
-      {showUserCreation && (
-        <QuickUserCreation onClose={() => setShowUserCreation(false)} />
-      )}
+      {showUserCreation && <QuickUserCreation />}
     </div>
   );
 };

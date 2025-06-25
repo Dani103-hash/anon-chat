@@ -75,3 +75,53 @@ All notable changes to AnonChat will be documented in this file.
 - **Category System**: Organized message categorization
 - **Reaction System**: Emoji reactions for messages
 - **Statistics Dashboard**: Comprehensive user activity tracking
+
+---
+
+## [v1.2.0] - 2025-06-25
+
+### 🔧 Fixed
+- **Build Errors**: Fixed all TypeScript compilation errors
+- **Share Functionality**: Fixed non-functional share buttons with proper fallbacks
+- **Icon Imports**: Replaced non-existent Lucide icons with available alternatives
+- **Component Props**: Fixed interface mismatches and prop passing issues
+
+### 🏗️ Code Refactoring
+- **useUserSession.ts**: Split into smaller, focused hooks for better maintainability
+  - `useAuth.ts` - Authentication management
+  - `useUserManager.ts` - User state management
+  - `useMessageSender.ts` - Message sending functionality
+- **useMessages.ts**: Refactored into focused components
+  - `useMessageManager.ts` - Message CRUD operations
+  - `useMessageSender.ts` - Message sending logic
+- **Component Architecture**: Created smaller, focused components
+
+### ✨ New Features
+- **User Feedback System**: Added comprehensive feedback collection
+  - 5-star rating system
+  - Optional text feedback
+  - Anonymous submission
+  - Feedback analytics support
+
+### 🏗️ New Components Created
+- `FeedbackModal.tsx` - User feedback collection interface
+- `useAuth.ts` - Authentication hook
+- `useUserManager.ts` - User management hook
+- `useMessageManager.ts` - Message management hook
+- `useMessageSender.ts` - Message sending hook
+
+### 🗃️ Database Changes
+- **Feedback Table**: Added feedback collection table with ratings and text
+- **Performance Indexes**: Added database indexes for better query performance
+
+### 🔄 Enhanced
+- **Share Functionality**: Improved with native Web Share API fallbacks
+- **Error Handling**: Better error messages and user feedback
+- **Code Organization**: Smaller, more maintainable hook files
+- **User Experience**: Added feedback collection for continuous improvement
+
+### 📊 Quality Improvements
+- **Type Safety**: Fixed all TypeScript errors
+- **Code Splitting**: Better separation of concerns
+- **Performance**: Optimized hook dependencies and re-renders
+- **Maintainability**: Smaller, focused files for easier development

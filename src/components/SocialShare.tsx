@@ -35,11 +35,30 @@ const SocialShare = ({ username }: SocialShareProps) => {
     }
   };
 
+  const shareProfile = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'AnonChat - Send me anonymous messages',
+          text: bioText,
+          url: profileUrl,
+        });
+      } else {
+        copyToClipboard(bioText);
+      }
+    } catch (error) {
+      console.log('Share failed, copying instead');
+      copyToClipboard(bioText);
+    }
+  };
+
   const shareToInstagram = () => {
-    const text = encodeURIComponent(`Send me anonymous messages 👀`);
-    const url = encodeURIComponent(profileUrl);
-    window.open(`https://www.instagram.com/`, '_blank');
     copyToClipboard(bioText);
+    toast({
+      title: "Text copied! 📋",
+      description: "Now paste it in your Instagram bio",
+    });
+    // Note: We can't directly open Instagram to bio editing, so we just copy the text
   };
 
   return (
@@ -87,19 +106,19 @@ const SocialShare = ({ username }: SocialShareProps) => {
 
         <div className="flex gap-2">
           <Button
-            onClick={shareToInstagram}
+            onClick={shareProfile}
             className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
           >
-            <Instagram className="w-4 h-4 mr-2" />
-            Share to Instagram
+            <Share2 className="w-4 h-4 mr-2" />
+            Share Link
           </Button>
           <Button
-            onClick={() => copyToClipboard(bioText)}
+            onClick={shareToInstagram}
             variant="outline"
             className="flex-1"
           >
-            <Copy className="w-4 h-4 mr-2" />
-            Copy Bio Text
+            <Instagram className="w-4 h-4 mr-2" />
+            For Instagram
           </Button>
         </div>
         
