@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, LogOut, Bell, BellOff, Trophy, MessageCircle, Home, ArrowLeft } from "lucide-react";
+import { MessageSquare, LogOut, Bell, BellOff, Trophy, MessageCircle, Home, ArrowLeft, AlertTriangle } from "lucide-react";
 import { useUserSession } from "@/hooks/useUserSession";
 import { useMessages } from "@/hooks/useMessages";
 import { useGamification } from "@/hooks/useGamification";
@@ -66,7 +66,7 @@ const UserDashboard = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    // Don't automatically navigate away - let the useUserSession hook handle the redirect
   };
 
   if (!user) return null;
@@ -82,6 +82,14 @@ const UserDashboard = () => {
             <p className="text-gray-600 mt-1 animate-fade-in">
               Your anonymous message inbox • Level {Math.floor(stats.messagesReceived / 10) + 1}
             </p>
+            {user.isAnonymous && (
+              <div className="flex items-center gap-2 mt-2">
+                <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                <p className="text-xs text-yellow-700">
+                  Anonymous session - Remember your username to access later
+                </p>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2 animate-slide-in-right">
             <Button
@@ -118,7 +126,7 @@ const UserDashboard = () => {
               className="gap-2 hover:bg-red-50 hover:border-red-300 transition-all duration-300 hover:scale-110"
             >
               <LogOut className="w-4 h-4" />
-              Logout
+              {user.isAnonymous ? 'Clear Session' : 'Logout'}
             </Button>
           </div>
         </CardHeader>

@@ -35,6 +35,25 @@ const Index = () => {
               <div className="space-y-6 animate-slide-in-right" style={{ animationDelay: '0.2s' }}>
                 <SocialShare username={user.username} />
                 <PWAInstallPrompt />
+                {user.isAnonymous && (
+                  <div className="bg-white/95 backdrop-blur rounded-xl p-4 shadow-xl">
+                    <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-yellow-600" />
+                      Anonymous Account Tips
+                    </h3>
+                    <div className="text-sm text-gray-600 space-y-2">
+                      <p>• Your session lasts 90 days</p>
+                      <p>• Remember your username: <strong>@{user.username}</strong></p>
+                      <p>• Bookmark this page to return easily</p>
+                      <p>• Consider creating a secure account for permanent access</p>
+                    </div>
+                    <Link to="/auth" className="block mt-3">
+                      <Button size="sm" className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700">
+                        Upgrade to Secure Account
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </div>

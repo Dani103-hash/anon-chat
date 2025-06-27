@@ -35,6 +35,10 @@ export const useUserManager = (session: Session | null) => {
 
       if (data && !error) {
         setUser({ ...data, isAnonymous: false });
+        // Clear any anonymous session data when secure user logs in
+        localStorage.removeItem('anonChatUserUuid');
+        localStorage.removeItem('anonChatUser');
+        localStorage.removeItem('anonChatUserExpiry');
       }
     } catch (error) {
       console.error('Error loading secure user:', error);
@@ -47,8 +51,17 @@ export const useUserManager = (session: Session | null) => {
     try {
       const localUuid = localStorage.getItem('anonChatUserUuid');
       const localUsername = localStorage.getItem('anonChatUser');
+      const localExpiry = localStorage.getItem('anonChatUserExpiry');
+      
+      // Check if the anonymous session has expired (90 days)
+      if (localExpiry && new Date().getTime() > parseInt(localExpiry)) {
+        clearAnonymousSession();
+        setLoading(false);
+        return;
+      }
       
       if (localUuid && localUsername) {
+        // Verify the user still exists in the database
         const { data, error } = await supabase
           .from('users')
           .select('*')
@@ -57,16 +70,30 @@ export const useUserManager = (session: Session | null) => {
 
         if (data && !error) {
           setUser({ ...data, isAnonymous: true });
+          // Extend the session expiry each time they return
+          extendAnonymousSession();
         } else {
-          localStorage.removeItem('anonChatUserUuid');
-          localStorage.removeItem('anonChatUser');
+          // User no longer exists in database, clear local storage
+          clearAnonymousSession();
         }
       }
     } catch (error) {
       console.error('Error loading anonymous session:', error);
+      clearAnonymousSession();
     } finally {
       setLoading(false);
     }
+  };
+
+  const clearAnonymousSession = () => {
+    localStorage.removeItem('anonChatUserUuid');
+    localStorage.removeItem('anonChatUser');
+    localStorage.removeItem('anonChatUserExpiry');
+  };
+
+  const extendAnonymousSession = () => {
+    const expiryTime = new Date().getTime() + (90 * 24 * 60 * 60 * 1000); // 90 days
+    localStorage.setItem('anonChatUserExpiry', expiryTime.toString());
   };
 
   const createAnonymousUser = async (username: string) => {
@@ -103,15 +130,18 @@ export const useUserManager = (session: Session | null) => {
         throw error;
       }
 
+      // Store anonymous session data with expiry
+      const expiryTime = new Date().getTime() + (90 * 24 * 60 * 60 * 1000); // 90 days
       localStorage.setItem('anonChatUserUuid', userUuid);
       localStorage.setItem('anonChatUser', username);
+      localStorage.setItem('anonChatUserExpiry', expiryTime.toString());
       
       const newUser = { ...data, isAnonymous: true };
       setUser(newUser);
       
       toast({
         title: "Welcome to AnonChat! 🎉",
-        description: `Your anonymous inbox is ready at /${username}`,
+        description: `Your anonymous inbox is ready! Session expires in 90 days.`,
       });
       
       return newUser;
@@ -127,15 +157,38 @@ export const useUserManager = (session: Session | null) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('anonChatUserUuid');
-    localStorage.removeItem('anonChatUser');
+    if (user?.isAnonymous) {
+      // For anonymous users, show a confirmation dialog before clearing session
+      const shouldClearSession = window.confirm(
+        "Are you sure you want to logout? You will lose access to your anonymous account unless you remember your username and can find your way back."
+      );
+      
+      if (shouldClearSession) {
+        clearAnonymousSession();
+        setUser(null);
+        toast({
+          title: "Logged out",
+          description: "Your anonymous session has been cleared.",
+        });
+      }
+    } else {
+      // For authenticated users, just clear the user state
+      setUser(null);
+    }
+  };
+
+  const switchToAnonymous = () => {
+    // Helper function to switch from authenticated to anonymous mode
     setUser(null);
+    loadAnonymousSession();
   };
 
   return {
     user,
     loading,
     createUser: createAnonymousUser,
-    logout
+    logout,
+    switchToAnonymous,
+    clearAnonymousSession
   };
 };
