@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Heart, Laugh, Sad, ThumbsUp, Fire, Star } from 'lucide-react';
+import { Heart, Laugh, ThumbsUp, Star } from 'lucide-react';
 
 interface Message {
   id: string;

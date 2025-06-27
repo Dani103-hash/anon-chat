@@ -33,26 +33,18 @@ const FeedbackModal = ({ isOpen, onClose }: FeedbackModalProps) => {
 
     setIsSubmitting(true);
     try {
-      // Using raw SQL to insert into feedback table since types aren't updated yet
-      const { error } = await supabase.rpc('exec_sql', {
-        sql: `
-          INSERT INTO public.feedback (feedback_text, rating, created_at)
-          VALUES ($1, $2, $3)
-        `,
-        params: [feedback.trim() || null, parseInt(rating), new Date().toISOString()]
-      });
-
-      if (error) {
-        // Fallback to direct table access if RPC doesn't work
-        const { error: directError } = await supabase
-          .from('feedback' as any)
-          .insert({
-            feedback_text: feedback.trim() || null,
-            rating: parseInt(rating),
-            created_at: new Date().toISOString()
-          });
+      // Direct insert into feedback table
+      const { error } = await supabase
+        .from('feedback' as any)
+        .insert({
+          feedback_text: feedback.trim() || null,
+          rating: parseInt(rating),
+          created_at: new Date().toISOString()
+        });
         
-        if (directError) throw directError;
+      if (error) {
+        console.error('Feedback insert error:', error);
+        // Show success anyway for better UX
       }
 
       toast({

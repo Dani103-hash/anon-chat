@@ -39,7 +39,13 @@ export const useGamification = (userId?: string) => {
     if (savedStats) {
       try {
         const parsed = JSON.parse(savedStats);
-        setStats({ ...defaultStats, ...parsed });
+        // Ensure achievements is always an array
+        const safeStats = {
+          ...defaultStats,
+          ...parsed,
+          achievements: Array.isArray(parsed.achievements) ? parsed.achievements : []
+        };
+        setStats(safeStats);
       } catch (error) {
         console.error('Error loading gamification stats:', error);
         setStats(defaultStats);
@@ -53,8 +59,13 @@ export const useGamification = (userId?: string) => {
     if (!userId) return;
     
     try {
-      localStorage.setItem(`gamification_${userId}`, JSON.stringify(newStats));
-      setStats(newStats);
+      // Ensure achievements is always an array before saving
+      const safeStats = {
+        ...newStats,
+        achievements: Array.isArray(newStats.achievements) ? newStats.achievements : []
+      };
+      localStorage.setItem(`gamification_${userId}`, JSON.stringify(safeStats));
+      setStats(safeStats);
     } catch (error) {
       console.error('Error saving gamification stats:', error);
     }
@@ -69,7 +80,8 @@ export const useGamification = (userId?: string) => {
     };
 
     // Check for new achievements
-    const newAchievements = [...stats.achievements];
+    const currentAchievements = Array.isArray(stats.achievements) ? stats.achievements : [];
+    const newAchievements = [...currentAchievements];
     
     if (newStats.messagesReceived === 1 && !newAchievements.includes('first_message')) {
       newAchievements.push('first_message');
@@ -96,7 +108,8 @@ export const useGamification = (userId?: string) => {
     };
 
     // Check for response achievements
-    const newAchievements = [...stats.achievements];
+    const currentAchievements = Array.isArray(stats.achievements) ? stats.achievements : [];
+    const newAchievements = [...currentAchievements];
     
     if (newStats.messagesAnswered === 1 && !newAchievements.includes('first_response')) {
       newAchievements.push('first_response');
@@ -138,7 +151,8 @@ export const useGamification = (userId?: string) => {
     };
 
     // Check for streak achievements
-    const newAchievements = [...stats.achievements];
+    const currentAchievements = Array.isArray(stats.achievements) ? stats.achievements : [];
+    const newAchievements = [...currentAchievements];
     
     if (newStreak === 7 && !newAchievements.includes('week_streak')) {
       newAchievements.push('week_streak');
