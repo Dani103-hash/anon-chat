@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, User, Sparkles } from 'lucide-react';
+import { X, User, Sparkles, RotateCcw } from 'lucide-react';
 import { useUserSession } from '@/hooks/useUserSession';
 
 interface QuickUserCreationProps {
@@ -21,7 +21,11 @@ const QuickUserCreation = ({ onClose }: QuickUserCreationProps) => {
 
     setIsLoading(true);
     try {
-      await createUser(username);
+      const result = await createUser(username);
+      if (result) {
+        // Success - user will be redirected automatically
+        onClose?.();
+      }
     } finally {
       setIsLoading(false);
     }
@@ -50,6 +54,12 @@ const QuickUserCreation = ({ onClose }: QuickUserCreationProps) => {
             Create Your Inbox
           </CardTitle>
           <p className="text-gray-600 animate-fade-in">Choose a username to get started</p>
+          <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-xs text-blue-700 flex items-center gap-1">
+              <RotateCcw className="w-3 h-3" />
+              Returning user? Just enter your username to recover your account!
+            </p>
+          </div>
         </CardHeader>
         <CardContent className="animate-slide-in-right">
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -90,12 +100,12 @@ const QuickUserCreation = ({ onClose }: QuickUserCreationProps) => {
                 {isLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Creating...
+                    Processing...
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4" />
-                    Create My Inbox
+                    Create / Recover
                   </div>
                 )}
               </Button>

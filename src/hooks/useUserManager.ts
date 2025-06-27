@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -107,12 +106,55 @@ export const useUserManager = (session: Session | null) => {
         return null;
       }
 
+      const normalizedUsername = username.toLowerCase();
+
+      // First, check if this username already exists
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', normalizedUsername)
+        .single();
+
+      if (existingUser && !checkError) {
+        // Username exists - check for device recovery
+        const deviceFingerprint = generateDeviceFingerprint();
+        const storedFingerprint = localStorage.getItem(`device_${normalizedUsername}`);
+        
+        if (storedFingerprint === deviceFingerprint) {
+          // This is the same device - recover the account
+          const expiryTime = new Date().getTime() + (90 * 24 * 60 * 60 * 1000); // 90 days
+          localStorage.setItem('anonChatUserUuid', existingUser.uuid);
+          localStorage.setItem('anonChatUser', normalizedUsername);
+          localStorage.setItem('anonChatUserExpiry', expiryTime.toString());
+          
+          const recoveredUser = { ...existingUser, isAnonymous: true };
+          setUser(recoveredUser);
+          
+          toast({
+            title: "Welcome back! 🎉",
+            description: "We've restored your anonymous account on this device.",
+          });
+          
+          return recoveredUser;
+        } else {
+          // Different device - username is taken
+          toast({
+            title: "Username taken",
+            description: "This username is already in use. If this is your account, try accessing it from your original device.",
+            variant: "destructive",
+          });
+          return null;
+        }
+      }
+
+      // Username doesn't exist - create new account
       const userUuid = crypto.randomUUID();
+      const deviceFingerprint = generateDeviceFingerprint();
       
       const { data, error } = await supabase
         .from('users')
         .insert({
-          username: username.toLowerCase(),
+          username: normalizedUsername,
           uuid: userUuid
         })
         .select()
@@ -130,11 +172,12 @@ export const useUserManager = (session: Session | null) => {
         throw error;
       }
 
-      // Store anonymous session data with expiry
+      // Store anonymous session data with expiry and device fingerprint
       const expiryTime = new Date().getTime() + (90 * 24 * 60 * 60 * 1000); // 90 days
       localStorage.setItem('anonChatUserUuid', userUuid);
-      localStorage.setItem('anonChatUser', username);
+      localStorage.setItem('anonChatUser', normalizedUsername);
       localStorage.setItem('anonChatUserExpiry', expiryTime.toString());
+      localStorage.setItem(`device_${normalizedUsername}`, deviceFingerprint);
       
       const newUser = { ...data, isAnonymous: true };
       setUser(newUser);
@@ -154,6 +197,25 @@ export const useUserManager = (session: Session | null) => {
       });
       return null;
     }
+  };
+
+  const generateDeviceFingerprint = () => {
+    // Create a simple device fingerprint based on available browser data
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx?.fillText('Device fingerprint', 10, 10);
+    const canvasFingerprint = canvas.toDataURL();
+    
+    const fingerprint = btoa(JSON.stringify({
+      userAgent: navigator.userAgent,
+      language: navigator.language,
+      platform: navigator.platform,
+      screenResolution: `${screen.width}x${screen.height}`,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      canvas: canvasFingerprint.slice(0, 50) // First 50 chars of canvas data
+    }));
+    
+    return fingerprint;
   };
 
   const logout = () => {
