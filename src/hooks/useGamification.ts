@@ -1,76 +1,178 @@
 
 import { useState, useEffect } from 'react';
 
-interface UserStats {
+interface GamificationStats {
   messagesReceived: number;
-  streak: number;
-  reactions: number;
-  messagesSent: number;
-  joinDate: string;
+  messagesAnswered: number;
+  currentStreak: number;
+  longestStreak: number;
+  level: number;
+  totalPoints: number;
+  achievements: string[];
+  lastActiveDate: string;
 }
 
+const defaultStats: GamificationStats = {
+  messagesReceived: 0,
+  messagesAnswered: 0,
+  currentStreak: 0,
+  longestStreak: 0,
+  level: 1,
+  totalPoints: 0,
+  achievements: [],
+  lastActiveDate: new Date().toDateString()
+};
+
 export const useGamification = (userId?: string) => {
-  const [stats, setStats] = useState<UserStats>({
-    messagesReceived: 0,
-    streak: 0,
-    reactions: 0,
-    messagesSent: 0,
-    joinDate: new Date().toISOString()
-  });
+  const [stats, setStats] = useState<GamificationStats>(defaultStats);
 
   useEffect(() => {
     if (userId) {
-      loadUserStats();
+      loadStats();
     }
   }, [userId]);
 
-  const loadUserStats = () => {
-    // Load from localStorage for now (in production, this would be from Supabase)
-    const savedStats = localStorage.getItem(`userStats_${userId}`);
+  const loadStats = () => {
+    if (!userId) return;
+    
+    const savedStats = localStorage.getItem(`gamification_${userId}`);
     if (savedStats) {
-      setStats(JSON.parse(savedStats));
+      try {
+        const parsed = JSON.parse(savedStats);
+        setStats({ ...defaultStats, ...parsed });
+      } catch (error) {
+        console.error('Error loading gamification stats:', error);
+        setStats(defaultStats);
+      }
+    } else {
+      setStats(defaultStats);
     }
   };
 
-  const updateStats = (updates: Partial<UserStats>) => {
-    const newStats = { ...stats, ...updates };
-    setStats(newStats);
-    if (userId) {
-      localStorage.setItem(`userStats_${userId}`, JSON.stringify(newStats));
+  const saveStats = (newStats: GamificationStats) => {
+    if (!userId) return;
+    
+    try {
+      localStorage.setItem(`gamification_${userId}`, JSON.stringify(newStats));
+      setStats(newStats);
+    } catch (error) {
+      console.error('Error saving gamification stats:', error);
     }
   };
 
   const incrementMessageReceived = () => {
-    updateStats({ messagesReceived: stats.messagesReceived + 1 });
+    const newStats = {
+      ...stats,
+      messagesReceived: stats.messagesReceived + 1,
+      totalPoints: stats.totalPoints + 10,
+      level: Math.floor((stats.totalPoints + 10) / 100) + 1
+    };
+
+    // Check for new achievements
+    const newAchievements = [...stats.achievements];
+    
+    if (newStats.messagesReceived === 1 && !newAchievements.includes('first_message')) {
+      newAchievements.push('first_message');
+    }
+    if (newStats.messagesReceived === 10 && !newAchievements.includes('popular_10')) {
+      newAchievements.push('popular_10');
+    }
+    if (newStats.messagesReceived === 50 && !newAchievements.includes('popular_50')) {
+      newAchievements.push('popular_50');
+    }
+    if (newStats.messagesReceived === 100 && !newAchievements.includes('popular_100')) {
+      newAchievements.push('popular_100');
+    }
+
+    newStats.achievements = newAchievements;
+    saveStats(newStats);
   };
 
-  const incrementReaction = () => {
-    updateStats({ reactions: stats.reactions + 1 });
-  };
+  const incrementMessageAnswered = () => {
+    const newStats = {
+      ...stats,
+      messagesAnswered: stats.messagesAnswered + 1,
+      totalPoints: stats.totalPoints + 5
+    };
 
-  const incrementMessageSent = () => {
-    updateStats({ messagesSent: stats.messagesSent + 1 });
+    // Check for response achievements
+    const newAchievements = [...stats.achievements];
+    
+    if (newStats.messagesAnswered === 1 && !newAchievements.includes('first_response')) {
+      newAchievements.push('first_response');
+    }
+    if (newStats.messagesAnswered === 25 && !newAchievements.includes('responsive_25')) {
+      newAchievements.push('responsive_25');
+    }
+
+    newStats.achievements = newAchievements;
+    newStats.level = Math.floor(newStats.totalPoints / 100) + 1;
+    
+    saveStats(newStats);
   };
 
   const updateStreak = () => {
-    const lastActive = localStorage.getItem(`lastActive_${userId}`);
     const today = new Date().toDateString();
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toDateString();
-    
-    if (lastActive === yesterday) {
-      updateStats({ streak: stats.streak + 1 });
-    } else if (lastActive !== today) {
-      updateStats({ streak: 1 });
+    const lastActive = new Date(stats.lastActiveDate).toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+
+    let newStreak = stats.currentStreak;
+
+    if (lastActive === today) {
+      // Already counted today
+      return;
+    } else if (lastActive === yesterday) {
+      // Consecutive day
+      newStreak += 1;
+    } else {
+      // Streak broken
+      newStreak = 1;
     }
+
+    const newStats = {
+      ...stats,
+      currentStreak: newStreak,
+      longestStreak: Math.max(newStreak, stats.longestStreak),
+      lastActiveDate: today,
+      totalPoints: stats.totalPoints + (newStreak > 1 ? 5 : 0)
+    };
+
+    // Check for streak achievements
+    const newAchievements = [...stats.achievements];
     
-    localStorage.setItem(`lastActive_${userId}`, today);
+    if (newStreak === 7 && !newAchievements.includes('week_streak')) {
+      newAchievements.push('week_streak');
+    }
+    if (newStreak === 30 && !newAchievements.includes('month_streak')) {
+      newAchievements.push('month_streak');
+    }
+
+    newStats.achievements = newAchievements;
+    newStats.level = Math.floor(newStats.totalPoints / 100) + 1;
+    
+    saveStats(newStats);
+  };
+
+  const getAchievementDetails = (achievementId: string) => {
+    const achievements = {
+      first_message: { name: "First Message!", description: "Received your first anonymous message", icon: "🎉" },
+      popular_10: { name: "Getting Popular", description: "Received 10 messages", icon: "📈" },
+      popular_50: { name: "Very Popular", description: "Received 50 messages", icon: "🌟" },
+      popular_100: { name: "Super Popular", description: "Received 100 messages", icon: "🔥" },
+      first_response: { name: "First Response", description: "Marked your first message as answered", icon: "💬" },
+      responsive_25: { name: "Great Responder", description: "Answered 25 messages", icon: "⚡" },
+      week_streak: { name: "Week Warrior", description: "7 day activity streak", icon: "🗓️" },
+      month_streak: { name: "Monthly Master", description: "30 day activity streak", icon: "🏆" }
+    };
+    
+    return achievements[achievementId as keyof typeof achievements] || { name: achievementId, description: "", icon: "🏅" };
   };
 
   return {
     stats,
     incrementMessageReceived,
-    incrementReaction,
-    incrementMessageSent,
-    updateStreak
+    incrementMessageAnswered,
+    updateStreak,
+    getAchievementDetails
   };
 };
