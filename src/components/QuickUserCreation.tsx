@@ -3,10 +3,14 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, User } from 'lucide-react';
+import { X, User, Sparkles } from 'lucide-react';
 import { useUserSession } from '@/hooks/useUserSession';
 
-const QuickUserCreation = () => {
+interface QuickUserCreationProps {
+  onClose?: () => void;
+}
+
+const QuickUserCreation = ({ onClose }: QuickUserCreationProps) => {
   const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { createUser } = useUserSession();
@@ -23,17 +27,31 @@ const QuickUserCreation = () => {
     }
   };
 
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md bg-white">
-        <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2 text-xl">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-sm">
+      <Card className="w-full max-w-md bg-white transform animate-scale-in shadow-2xl border-0">
+        <CardHeader className="text-center relative">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleClose}
+            className="absolute right-2 top-2 hover:bg-red-50 hover:text-red-600 transition-all duration-300 hover:scale-110"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+          <CardTitle className="flex items-center justify-center gap-2 text-xl animate-pulse">
             <User className="w-6 h-6 text-purple-600" />
             Create Your Inbox
           </CardTitle>
-          <p className="text-gray-600">Choose a username to get started</p>
+          <p className="text-gray-600 animate-fade-in">Choose a username to get started</p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="animate-slide-in-right">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
@@ -45,22 +63,43 @@ const QuickUserCreation = () => {
                 placeholder="your_username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full"
+                className="w-full transition-all duration-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 border-purple-200"
                 disabled={isLoading}
                 maxLength={30}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1 animate-fade-in">
                 Your link will be: anonchat.app/{username}
               </p>
             </div>
             
-            <Button 
-              type="submit" 
-              className="w-full bg-purple-600 hover:bg-purple-700"
-              disabled={!username.trim() || isLoading}
-            >
-              {isLoading ? 'Creating...' : 'Create My Inbox'}
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                className="flex-1 hover:bg-gray-50 transition-all duration-300 hover:scale-105"
+                disabled={isLoading}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all duration-300 hover:scale-105 hover:shadow-lg transform"
+                disabled={!username.trim() || isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Creating...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    Create My Inbox
+                  </div>
+                )}
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>

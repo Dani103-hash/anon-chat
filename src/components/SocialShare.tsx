@@ -95,10 +95,10 @@ const SocialShare = ({ username }: SocialShareProps) => {
   };
 
   return (
-    <Card className="bg-white/95 backdrop-blur border-0 shadow-xl">
+    <Card className="bg-white/95 backdrop-blur border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 animate-fade-in">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Share2 className="w-5 h-5 text-purple-600" />
+          <Share2 className="w-5 h-5 text-purple-600 animate-pulse" />
           Share Your Link
         </CardTitle>
       </CardHeader>
@@ -107,15 +107,15 @@ const SocialShare = ({ username }: SocialShareProps) => {
           <Input
             value={shareUrl}
             readOnly
-            className="flex-1 text-sm bg-gray-50"
+            className="flex-1 text-sm bg-gradient-to-r from-gray-50 to-purple-50 border-purple-200 focus:border-purple-400 transition-all duration-300"
           />
           <Button
             onClick={handleCopyLink}
             size="sm"
             variant="outline"
-            className="px-3"
+            className="px-3 hover:bg-purple-50 hover:border-purple-300 transition-all duration-300 hover:scale-110"
           >
-            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            {copied ? <Check className="w-4 h-4 text-green-500 animate-bounce" /> : <Copy className="w-4 h-4" />}
           </Button>
         </div>
         
@@ -123,15 +123,16 @@ const SocialShare = ({ username }: SocialShareProps) => {
           <Button
             onClick={handleNativeShare}
             size="sm"
-            className="bg-purple-600 hover:bg-purple-700"
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
           >
-            <Share2 className="w-4 h-4 mr-1" />
+            <Share2 className="w-4 h-4 mr-1 animate-pulse" />
             Share
           </Button>
           <Button
             onClick={() => window.open(shareUrl, '_blank')}
             size="sm"
             variant="outline"
+            className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:border-purple-300 transform hover:scale-105 transition-all duration-300"
           >
             <ExternalLink className="w-4 h-4 mr-1" />
             Preview
@@ -143,15 +144,15 @@ const SocialShare = ({ username }: SocialShareProps) => {
             onClick={() => handleSocialShare('twitter')}
             size="sm" 
             variant="outline"
-            className="text-blue-500 border-blue-200 hover:bg-blue-50"
+            className="text-blue-500 border-blue-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transform hover:scale-105 transition-all duration-300 hover:shadow-md"
           >
-            Twitter
+            Twitter (X)
           </Button>
           <Button 
             onClick={() => handleSocialShare('facebook')}
             size="sm" 
             variant="outline"
-            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+            className="text-blue-600 border-blue-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transform hover:scale-105 transition-all duration-300 hover:shadow-md"
           >
             Facebook
           </Button>
@@ -159,7 +160,7 @@ const SocialShare = ({ username }: SocialShareProps) => {
             onClick={() => handleSocialShare('whatsapp')}
             size="sm" 
             variant="outline"
-            className="text-green-600 border-green-200 hover:bg-green-50"
+            className="text-green-600 border-green-200 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 transform hover:scale-105 transition-all duration-300 hover:shadow-md"
           >
             WhatsApp
           </Button>
@@ -167,7 +168,7 @@ const SocialShare = ({ username }: SocialShareProps) => {
             onClick={() => handleSocialShare('telegram')}
             size="sm" 
             variant="outline"
-            className="text-blue-400 border-blue-200 hover:bg-blue-50"
+            className="text-blue-400 border-blue-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transform hover:scale-105 transition-all duration-300 hover:shadow-md"
           >
             Telegram
           </Button>
