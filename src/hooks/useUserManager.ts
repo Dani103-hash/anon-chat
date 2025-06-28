@@ -119,11 +119,11 @@ export const useUserManager = (session: Session | null) => {
 
       const normalizedUsername = username.toLowerCase();
 
-      // First, check if this username already exists
+      // First, check if this username already exists (case-insensitive)
       const { data: existingUser, error: checkError } = await supabase
         .from('users')
         .select('*')
-        .eq('username', normalizedUsername)
+        .ilike('username', normalizedUsername)
         .single();
 
       if (existingUser && !checkError) {
@@ -135,7 +135,7 @@ export const useUserManager = (session: Session | null) => {
           // This is the same device - recover the account optimistically
           const expiryTime = new Date().getTime() + (90 * 24 * 60 * 60 * 1000); // 90 days
           localStorage.setItem('anonChatUserUuid', existingUser.uuid);
-          localStorage.setItem('anonChatUser', normalizedUsername);
+          localStorage.setItem('anonChatUser', existingUser.username); // Use stored username (keeps original case)
           localStorage.setItem('anonChatUserExpiry', expiryTime.toString());
           
           const recoveredUser = { ...existingUser, isAnonymous: true };
@@ -162,10 +162,13 @@ export const useUserManager = (session: Session | null) => {
       const userUuid = crypto.randomUUID();
       const deviceFingerprint = generateDeviceFingerprint();
       
+      // Store the original username case but search with lowercase
+      const displayUsername = username; // Keep original case for display
+      
       // Optimistically set user first
       const optimisticUser = {
         id: userUuid,
-        username: normalizedUsername,
+        username: displayUsername,
         uuid: userUuid,
         isAnonymous: true
       };
@@ -174,21 +177,22 @@ export const useUserManager = (session: Session | null) => {
       // Store session data immediately
       const expiryTime = new Date().getTime() + (90 * 24 * 60 * 60 * 1000); // 90 days
       localStorage.setItem('anonChatUserUuid', userUuid);
-      localStorage.setItem('anonChatUser', normalizedUsername);
+      localStorage.setItem('anonChatUser', displayUsername);
       localStorage.setItem('anonChatUserExpiry', expiryTime.toString());
       localStorage.setItem(`device_${normalizedUsername}`, deviceFingerprint);
       
-      // Then create in database in background
+      // Then create in database in background (store lowercase for consistency)
       const { data, error } = await supabase
         .from('users')
         .insert({
-          username: normalizedUsername,
+          username: normalizedUsername, // Store lowercase in database
           uuid: userUuid
         })
         .select()
         .single();
 
       if (error) {
+        console.error('Database insert error:', error);
         if (error.code === '23505') {
           toast({
             title: "Username taken",
@@ -203,13 +207,13 @@ export const useUserManager = (session: Session | null) => {
         throw error;
       }
 
-      // Update with real data from database
-      const newUser = { ...data, isAnonymous: true };
+      // Update with real data from database but keep display username
+      const newUser = { ...data, username: displayUsername, isAnonymous: true };
       setUser(newUser);
       
       toast({
         title: "Welcome to AnonChat! 🎉",
-        description: `Your anonymous inbox is ready! Session expires in 90 days.`,
+        description: `Your anonymous inbox is ready! Share your link: anonchat.app/${displayUsername}`,
       });
       
       return newUser;
@@ -217,7 +221,7 @@ export const useUserManager = (session: Session | null) => {
       console.error('Error creating anonymous user:', error);
       toast({
         title: "Error",
-        description: "Failed to create user account",
+        description: "Failed to create user account. Please try again.",
         variant: "destructive",
       });
       // Rollback optimistic update
