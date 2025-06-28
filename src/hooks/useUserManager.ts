@@ -60,7 +60,17 @@ export const useUserManager = (session: Session | null) => {
       }
       
       if (localUuid && localUsername) {
-        // Verify the user still exists in the database
+        // Optimistically set the user first
+        const optimisticUser = {
+          id: localUuid,
+          username: localUsername,
+          uuid: localUuid,
+          isAnonymous: true
+        };
+        setUser(optimisticUser);
+        setLoading(false);
+        
+        // Then verify in background
         const { data, error } = await supabase
           .from('users')
           .select('*')
@@ -69,17 +79,18 @@ export const useUserManager = (session: Session | null) => {
 
         if (data && !error) {
           setUser({ ...data, isAnonymous: true });
-          // Extend the session expiry each time they return
           extendAnonymousSession();
         } else {
           // User no longer exists in database, clear local storage
           clearAnonymousSession();
+          setUser(null);
         }
+      } else {
+        setLoading(false);
       }
     } catch (error) {
       console.error('Error loading anonymous session:', error);
       clearAnonymousSession();
-    } finally {
       setLoading(false);
     }
   };
@@ -121,7 +132,7 @@ export const useUserManager = (session: Session | null) => {
         const storedFingerprint = localStorage.getItem(`device_${normalizedUsername}`);
         
         if (storedFingerprint === deviceFingerprint) {
-          // This is the same device - recover the account
+          // This is the same device - recover the account optimistically
           const expiryTime = new Date().getTime() + (90 * 24 * 60 * 60 * 1000); // 90 days
           localStorage.setItem('anonChatUserUuid', existingUser.uuid);
           localStorage.setItem('anonChatUser', normalizedUsername);
@@ -151,6 +162,23 @@ export const useUserManager = (session: Session | null) => {
       const userUuid = crypto.randomUUID();
       const deviceFingerprint = generateDeviceFingerprint();
       
+      // Optimistically set user first
+      const optimisticUser = {
+        id: userUuid,
+        username: normalizedUsername,
+        uuid: userUuid,
+        isAnonymous: true
+      };
+      setUser(optimisticUser);
+      
+      // Store session data immediately
+      const expiryTime = new Date().getTime() + (90 * 24 * 60 * 60 * 1000); // 90 days
+      localStorage.setItem('anonChatUserUuid', userUuid);
+      localStorage.setItem('anonChatUser', normalizedUsername);
+      localStorage.setItem('anonChatUserExpiry', expiryTime.toString());
+      localStorage.setItem(`device_${normalizedUsername}`, deviceFingerprint);
+      
+      // Then create in database in background
       const { data, error } = await supabase
         .from('users')
         .insert({
@@ -167,18 +195,15 @@ export const useUserManager = (session: Session | null) => {
             description: "This username is already in use. Please choose another.",
             variant: "destructive",
           });
+          // Rollback optimistic update
+          setUser(null);
+          clearAnonymousSession();
           return null;
         }
         throw error;
       }
 
-      // Store anonymous session data with expiry and device fingerprint
-      const expiryTime = new Date().getTime() + (90 * 24 * 60 * 60 * 1000); // 90 days
-      localStorage.setItem('anonChatUserUuid', userUuid);
-      localStorage.setItem('anonChatUser', normalizedUsername);
-      localStorage.setItem('anonChatUserExpiry', expiryTime.toString());
-      localStorage.setItem(`device_${normalizedUsername}`, deviceFingerprint);
-      
+      // Update with real data from database
       const newUser = { ...data, isAnonymous: true };
       setUser(newUser);
       
@@ -195,6 +220,9 @@ export const useUserManager = (session: Session | null) => {
         description: "Failed to create user account",
         variant: "destructive",
       });
+      // Rollback optimistic update
+      setUser(null);
+      clearAnonymousSession();
       return null;
     }
   };

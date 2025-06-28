@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, User, Sparkles, RotateCcw } from 'lucide-react';
 import { useUserSession } from '@/hooks/useUserSession';
+import LoadingSpinner from './LoadingSpinner';
 
 interface QuickUserCreationProps {
   onClose?: () => void;
@@ -46,6 +47,7 @@ const QuickUserCreation = ({ onClose }: QuickUserCreationProps) => {
             size="sm" 
             onClick={handleClose}
             className="absolute right-2 top-2 hover:bg-red-50 hover:text-red-600 transition-all duration-300 hover:scale-110"
+            disabled={isLoading}
           >
             <X className="w-4 h-4" />
           </Button>
@@ -98,10 +100,7 @@ const QuickUserCreation = ({ onClose }: QuickUserCreationProps) => {
                 disabled={!username.trim() || isLoading}
               >
                 {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Processing...
-                  </div>
+                  <LoadingSpinner size="sm" />
                 ) : (
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4" />

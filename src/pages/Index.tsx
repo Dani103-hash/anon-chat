@@ -10,6 +10,7 @@ import EngagementTips from "@/components/EngagementTips";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import UserDashboard from "@/components/UserDashboard";
 import SocialShare from "@/components/SocialShare";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const Index = () => {
   const { user, loading } = useUserSession();
@@ -18,7 +19,7 @@ const Index = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-white/30 border-t-white rounded-full"></div>
+        <LoadingSpinner size="lg" text="Loading your dashboard..." />
       </div>
     );
   }

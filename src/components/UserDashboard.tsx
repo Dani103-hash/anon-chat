@@ -13,6 +13,7 @@ import MessageTabs from "./MessageTabs";
 import MessageCategories from "./MessageCategories";
 import GamificationSystem from "./GamificationSystem";
 import FeedbackModal from "./FeedbackModal";
+import LoadingSpinner from "./LoadingSpinner";
 
 const UserDashboard = () => {
   const { user, logout } = useUserSession();
@@ -66,7 +67,6 @@ const UserDashboard = () => {
 
   const handleLogout = () => {
     logout();
-    // Don't automatically navigate away - let the useUserSession hook handle the redirect
   };
 
   if (!user) return null;
@@ -149,53 +149,59 @@ const UserDashboard = () => {
             )}
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
-              <TabsTrigger 
-                value="messages" 
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300 hover:scale-105"
-              >
-                Messages
-              </TabsTrigger>
-              <TabsTrigger 
-                value="categories"
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300 hover:scale-105"
-              >
-                Categories
-              </TabsTrigger>
-              <TabsTrigger 
-                value="achievements"
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300 hover:scale-105"
-              >
-                <Trophy className="w-4 h-4 mr-1 animate-bounce" />
-                Achievements
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="messages" className="mt-6 animate-fade-in">
-              <MessageTabs
-                messages={filteredMessages}
-                onMarkAnswered={markAsAnswered}
-                onDelete={deleteMessage}
-                onReport={reportMessage}
-              />
-            </TabsContent>
-            
-            <TabsContent value="categories" className="mt-6 animate-fade-in">
-              <MessageCategories
-                messages={messages}
-                onCategoryFilter={handleCategoryFilter}
-                onReact={handleReact}
-              />
-            </TabsContent>
-            
-            <TabsContent value="achievements" className="mt-6 animate-fade-in">
-              <GamificationSystem
-                stats={stats}
-                username={user.username}
-              />
-            </TabsContent>
-          </Tabs>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <LoadingSpinner size="md" text="Loading your messages..." />
+            </div>
+          ) : (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-3 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+                <TabsTrigger 
+                  value="messages" 
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300 hover:scale-105"
+                >
+                  Messages
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="categories"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300 hover:scale-105"
+                >
+                  Categories
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="achievements"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300 hover:scale-105"
+                >
+                  <Trophy className="w-4 h-4 mr-1 animate-bounce" />
+                  Achievements
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="messages" className="mt-6 animate-fade-in">
+                <MessageTabs
+                  messages={filteredMessages}
+                  onMarkAnswered={markAsAnswered}
+                  onDelete={deleteMessage}
+                  onReport={reportMessage}
+                />
+              </TabsContent>
+              
+              <TabsContent value="categories" className="mt-6 animate-fade-in">
+                <MessageCategories
+                  messages={messages}
+                  onCategoryFilter={handleCategoryFilter}
+                  onReact={handleReact}
+                />
+              </TabsContent>
+              
+              <TabsContent value="achievements" className="mt-6 animate-fade-in">
+                <GamificationSystem
+                  stats={stats}
+                  username={user.username}
+                />
+              </TabsContent>
+            </Tabs>
+          )}
         </CardContent>
       </Card>
 
